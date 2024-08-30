@@ -1,0 +1,72 @@
+services:
+  nginx:
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    image: "nginx:my_nginx"
+    container_name: nginx
+    depends_on:
+      - wordpress
+    ports:
+      - "443:443"
+    volumes:
+      - ./requirements/nginx/conf/nginx.conf:/etc/nginx/sites-available/default
+      - wp-data:/var/www/
+    networks:
+      - my-network
+    
+    restart: always
+
+  mariadb:
+    build:
+      context: ./requirements/mariadb
+      args:
+        MYSQL_DATABASE: ${MYSQL_DATABASE}
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        MYSQL_USER: ${MYSQL_USER}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      dockerfile: Dockerfile
+    image: "mariadb:my_mariadb"
+    container_name: mariadb
+    env_file:
+    - .env
+    networks:
+      - my-network
+    restart: always
+
+  wordpress:
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+      args:
+        MYSQL_DATABASE: ${MYSQL_DATABASE}
+        MYSQL_USER: ${MYSQL_USER}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    image: "wordpress:my_wp"
+    container_name: wordpress
+    depends_on:
+      - mariadb
+    volumes:
+      - wp-data:/var/www/
+    env_file:
+      - .env
+    networks:
+      - my-network
+    restart: always
+
+volumes:
+  wp-data:
+    driver_opts:
+      o: bind
+      type: none
+      device: /Users/msaidi/Desktop/Inception/srcs/data/wp-data
+  
+  db-data:
+    driver_opts:
+      o: bind
+      type: none
+      device: /Users/msaidi/Desktop/Inception/srcs/data/db-data
+
+networks:
+  my-network:
+    driver: bridge
